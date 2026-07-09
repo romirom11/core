@@ -25,27 +25,6 @@
         "capabilities": ["chat", "structured", "reasoning"]
       },
       {
-        "modelId": "gpt-5.3-codex-spark",
-        "label": "GPT-5.3-codex-spark",
-        "complexity": "medium",
-        "supportsBatch": false,
-        "capabilities": ["chat", "structured", "reasoning"]
-      },
-      {
-        "modelId": "gpt-oss-120b-medium",
-        "label": "GPT-oss-120b-medium",
-        "complexity": "medium",
-        "supportsBatch": false,
-        "capabilities": ["chat", "structured", "reasoning"]
-      },
-      {
-        "modelId": "codex-auto-review",
-        "label": "Codex auto-review",
-        "complexity": "medium",
-        "supportsBatch": false,
-        "capabilities": ["chat", "structured", "reasoning"]
-      },
-      {
         "modelId": "text-embedding-3-small",
         "label": "Text Embedding 3 Small",
         "complexity": "low",
