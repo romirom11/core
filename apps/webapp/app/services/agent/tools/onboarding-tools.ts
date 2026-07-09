@@ -8,7 +8,10 @@
  * - list_available_integrations: returns the catalog of integration
  *   definitions the workspace can connect, with isConnected flags. The
  *   agent calls this before suggest_integrations to know which slugs
- *   are valid and to avoid suggesting things already connected.
+ *   are valid and to avoid suggesting things already connected. It reads
+ *   IntegrationDefinitionV2 only — custom MCP servers live on
+ *   user.metadata.mcpIntegrations and are reachable through the
+ *   orchestrator, never through this catalog.
  *
  * - suggest_integrations: renders inline integration connect cards in
  *   the chat. The UI catches the tool call, looks up each slug's OAuth
@@ -31,7 +34,7 @@ export function getListAvailableIntegrationsTool(
 ): Tool {
   return tool({
     description:
-      "Get the catalog of integrations the user's workspace can connect. Returns slug, name, description, and whether the user already has it connected. Call this before suggest_integrations whenever you need to verify which slugs are valid or to avoid recommending something already wired up. Pass an optional query string to filter by slug or name (case-insensitive substring).",
+      "Get the catalog of integrations the user's workspace can CONNECT. Returns slug, name, description, and whether the user already has it connected. Call this before suggest_integrations whenever you need to verify which slugs are valid or to avoid recommending something already wired up. Pass an optional query string to filter by slug or name (case-insensitive substring). This is not a list of what you can currently use: custom MCP servers the user connected never appear here, so an empty result does NOT mean the integration is unavailable — delegate to the orchestrator to reach an already-connected one.",
     inputSchema: z.object({
       query: z
         .string()
@@ -85,6 +88,13 @@ export function getListAvailableIntegrationsTool(
         `list_available_integrations: ${integrations.length} match${query ? ` (query="${query}")` : ""}`,
       );
 
+      // This catalog only covers connectable integration definitions. A custom
+      // MCP server lives on user.metadata and never appears here, so an empty
+      // result reads as "that tool does not exist" unless we say otherwise —
+      // which is how an agent talks itself out of using one already connected.
+      const scope =
+        "This catalog lists integrations available to CONNECT. It excludes custom MCP servers the user has already connected. To use an integration that is already connected, delegate to the orchestrator (gather_context or take_action) instead of relying on this list.";
+
       return {
         content: [
           {
@@ -92,6 +102,7 @@ export function getListAvailableIntegrationsTool(
             text: JSON.stringify({
               integrations,
               count: integrations.length,
+              scope,
             }),
           },
         ],
