@@ -40,6 +40,99 @@ Not a chatbot you open. An AI that is always on, always watching.
 Name it. Shape it. Connect it to everything you use. Reach it however you work.
 Open source, self-hosted, yours forever.
 
+---
+
+## About this fork
+
+A fork of [RedPlanetHQ/core](https://github.com/RedPlanetHQ/core) that routes every
+model family through a self-hosted [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)
+gateway, each over its own native protocol.
+
+Upstream only lets OpenAI, Azure and Ollama point at a custom endpoint. Anything
+`claude-*` or `gemini-*` fell through to Mastra's model router, whose
+`"provider/model"` string carries no URL — so those calls reached Anthropic's and
+Google's public APIs no matter what you configured. This fork adds
+`ANTHROPIC_BASE_URL` and `GEMINI_BASE_URL`, and builds a real AI SDK client for
+either provider when one is set.
+
+Talking to each vendor natively (rather than flattening everything through an
+OpenAI-compatible shim) preserves what the translation drops: Claude's extended
+thinking, Gemini's thought signatures, cache control, tool-use semantics.
+
+### Configuration
+
+Every variable lives in the environment. **Do not enter keys through the settings
+UI** — a workspace key overrides the environment (`resolveApiKeyForWorkspace`
+checks BYOK first), and the provider rows have no base-URL field, so a URL typed
+there is stored as an encrypted API key. See [Known gaps](#known-gaps).
+
+One gateway, one key, three protocols. The suffixes differ because each SDK
+appends its own path:
+
+```bash
+CHAT_PROVIDER=openai
+MODEL=gpt-5.4
+
+OPENAI_API_KEY=<gateway key>
+OPENAI_BASE_URL=http://<gateway>:8317/v1        # + /chat/completions
+OPENAI_API_MODE=chat_completions
+
+ANTHROPIC_API_KEY=<same key>
+ANTHROPIC_BASE_URL=http://<gateway>:8317/v1     # + /messages
+
+GOOGLE_GENERATIVE_AI_API_KEY=<same key>
+GEMINI_BASE_URL=http://<gateway>:8317/v1beta    # + /models/{model}:generateContent
+
+EMBEDDINGS_PROVIDER=ollama
+EMBEDDING_MODEL=bge-m3
+EMBEDDING_MODEL_SIZE=1024
+OLLAMA_URL=http://<ollama>:11434
+```
+
+Leave a `*_BASE_URL` blank and that provider goes straight to the vendor through
+the router, exactly as upstream does.
+
+### Model catalog
+
+`apps/webapp/app/config/llm-models.json` lists the 29 chat models the gateway
+serves, replacing upstream's three `gpt-5.x` ids — none of which exist on it. The
+two `gpt-image-*` ids are omitted; they answer `503 only supported on
+/v1/images/generations`.
+
+Complexity tiers are assigned by name (opus/pro → high, sonnet/flash → medium,
+haiku/mini/lite → low), not measured. `getModelForUseCase` picks a tier with
+`findFirst` and no `orderBy`, so with eight models sharing the `high` tier the
+choice is arbitrary — pin one per use case under **Settings → Workspace → Models**
+if that matters.
+
+Regenerate the list against your own gateway with `GET /v1/models`.
+
+### Known gaps
+
+**A model named only through `MODEL` survives one restart.** The seeder deprecates
+any catalog row missing from `llm-models.json` (`ensureDefaultProviders`, the loop
+over `existingModels`), and the check that would recreate it ignores
+`isDeprecated`. Add the model to the JSON file, or lift the flag by hand:
+
+```sql
+UPDATE "LLMModel" SET "isDeprecated" = false WHERE "modelId" IN ('gpt-5.4', 'bge-m3');
+```
+
+**Base URLs are environment-only.** `BYOKRow` in `settings.workspace.models.tsx`
+renders a single password field per provider, and `handleSave` submits only
+`apiKey` — but the row's hint text is pulled from `PROVIDER_SPECS[...].baseUrl.hint`
+and talks about proxy URLs. Type a URL there and it is encrypted and stored as
+that provider's key, silently shadowing the environment.
+
+Wiring the field up properly means making `getProviderConfig` async (it reads env
+today), which cascades through `getModel` → `createAgent` → its eleven importers,
+and needs an env fallback in the three places with no workspace in scope:
+`generateButlerName`, the batch provider, and `search/rerank.ts`.
+
+**Anything else** — upstream's docs below still apply.
+
+---
+
 <p align="center">
     <a href="https://getcore.me">
         <img src="https://img.shields.io/badge/Website-getcore.me-c15e50?style=for-the-badge&logo=safari&logoColor=white" alt="Website" />
