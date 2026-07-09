@@ -328,6 +328,9 @@ export async function getModelForUseCase(
     where: { type: env.CHAT_PROVIDER, workspaceId: null },
   });
   if (provider) {
+    // findFirst without orderBy takes whatever row Postgres hands back, which can
+    // change after a VACUUM or an unrelated update. With more than one model in a
+    // tier that silently reassigns which one titles, ingestion and search run on.
     const model = await prisma.lLMModel.findFirst({
       where: {
         providerId: provider.id,
@@ -336,6 +339,7 @@ export async function getModelForUseCase(
         isEnabled: true,
         isDeprecated: false,
       },
+      orderBy: { modelId: "asc" },
     });
     if (model) return model.modelId;
   }
