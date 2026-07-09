@@ -129,6 +129,29 @@ today), which cascades through `getModel` → `createAgent` → its eleven impor
 and needs an env fallback in the three places with no workspace in scope:
 `generateButlerName`, the batch provider, and `search/rerank.ts`.
 
+**A custom MCP is never a first-class tool.** The agent is handed three meta-tools
+(`get_integrations`, `get_integration_actions`, `execute_integration_action`) and a
+line of text naming each connected account. Ask "can you see my MCP?" and it looks
+at its own toolset, does not find one by that name, and truthfully says no. Ask it
+to *do* something and it delegates to the orchestrator, which reaches the server.
+
+Two catalogs are easy to confuse: **Settings → MCP Sessions** lists clients that
+connect *to* CORE. **Home → Integrations → Add Custom Integration** registers a
+server CORE connects *to*. Only the second is what an agent can use.
+
+`list_available_integrations` used to make this worse — it reads
+`IntegrationDefinitionV2`, so a connected custom MCP returns `{count: 0}` and the
+agent concluded the tool did not exist. Claude did this reliably; GPT and Gemini
+happened to delegate first. The tool now returns a `scope` field explaining what it
+covers, and the prompt says an empty catalog answers "can they connect this?", never
+"do they have it?". Not yet confirmed against a running instance.
+
+**A large MCP server may blow the action-selection prompt.** Before handing actions
+to the agent, `getIntegrationActions` asks a separate `low`-tier model to pick the
+relevant ones, and builds its prompt with every tool's full `inputSchema`. A
+60-tool server (OneUptime) produces roughly 100k tokens. If that model returns an
+empty array the code returns `[]` — the agent sees no actions, with no error.
+
 **Anything else** — upstream's docs below still apply.
 
 ---
