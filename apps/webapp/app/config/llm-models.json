@@ -4,22 +4,45 @@
     "envKey": "OPENAI_API_KEY",
     "models": [
       {
-        "modelId": "gpt-5.2-2025-12-11",
-        "label": "GPT-5.2",
+        "modelId": "gpt-5.5",
+        "label": "GPT-5.5",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "gpt-5.4",
+        "label": "GPT-5.4",
         "complexity": "medium",
         "supportsBatch": false,
         "capabilities": ["chat", "structured", "reasoning"]
       },
       {
-        "modelId": "gpt-5-2025-08-07",
-        "label": "GPT-5",
-        "complexity": "medium",
+        "modelId": "gpt-5.4-mini",
+        "label": "GPT-5.4-mini",
+        "complexity": "low",
+        "supportsBatch": false,
         "capabilities": ["chat", "structured", "reasoning"]
       },
       {
-        "modelId": "gpt-5-mini-2025-08-07",
-        "label": "GPT-5 Mini",
-        "complexity": "low",
+        "modelId": "gpt-5.3-codex-spark",
+        "label": "GPT-5.3-codex-spark",
+        "complexity": "medium",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "gpt-oss-120b-medium",
+        "label": "GPT-oss-120b-medium",
+        "complexity": "medium",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "codex-auto-review",
+        "label": "Codex auto-review",
+        "complexity": "medium",
+        "supportsBatch": false,
         "capabilities": ["chat", "structured", "reasoning"]
       },
       {
@@ -45,17 +68,109 @@
     "envKey": "ANTHROPIC_API_KEY",
     "models": [
       {
-        "modelId": "claude-sonnet-4-6",
-        "label": "Claude Sonnet 4.6",
-        "complexity": "medium",
+        "modelId": "claude-opus-4-8",
+        "label": "Claude opus-4-8",
+        "complexity": "high",
         "supportsBatch": false,
-        "capabilities": ["chat", "structured"]
+        "capabilities": ["chat", "structured", "reasoning"]
       },
       {
-        "modelId": "claude-haiku-4-5",
-        "label": "Claude Haiku 4.5",
+        "modelId": "claude-opus-4-7",
+        "label": "Claude opus-4-7",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-opus-4-6",
+        "label": "Claude opus-4-6",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-opus-4-6-thinking",
+        "label": "Claude opus-4-6-thinking",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-opus-4-5-20251101",
+        "label": "Claude opus-4-5",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-opus-4-1-20250805",
+        "label": "Claude opus-4-1",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-opus-4-20250514",
+        "label": "Claude opus-4",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-sonnet-5",
+        "label": "Claude sonnet-5",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-sonnet-4-6",
+        "label": "Claude sonnet-4-6",
+        "complexity": "medium",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-sonnet-4-5-20250929",
+        "label": "Claude sonnet-4-5",
+        "complexity": "medium",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-sonnet-4-20250514",
+        "label": "Claude sonnet-4",
+        "complexity": "medium",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-3-7-sonnet-20250219",
+        "label": "Claude 3-7-sonnet",
+        "complexity": "medium",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-fable-5",
+        "label": "Claude fable-5",
+        "complexity": "medium",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-haiku-4-5-20251001",
+        "label": "Claude haiku-4-5",
         "complexity": "low",
-        "capabilities": ["chat", "structured"]
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "claude-3-5-haiku-20241022",
+        "label": "Claude 3-5-haiku",
+        "complexity": "low",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
       }
     ]
   },
@@ -64,16 +179,60 @@
     "envKey": "GOOGLE_GENERATIVE_AI_API_KEY",
     "models": [
       {
-        "modelId": "gemini-2.5-pro-preview-03-25",
-        "label": "Gemini 2.5 Pro",
-        "complexity": "medium",
-        "capabilities": ["chat", "structured"]
+        "modelId": "gemini-3.1-pro-low",
+        "label": "Gemini 3.1-pro-low",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
       },
       {
-        "modelId": "gemini-2.5-flash-preview-04-17",
-        "label": "Gemini 2.5 Flash",
+        "modelId": "gemini-pro-agent",
+        "label": "Gemini pro-agent",
+        "complexity": "high",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "gemini-3-flash",
+        "label": "Gemini 3-flash",
         "complexity": "low",
-        "capabilities": ["chat", "structured"]
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "gemini-3-flash-agent",
+        "label": "Gemini 3-flash-agent",
+        "complexity": "low",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "gemini-3.5-flash-low",
+        "label": "Gemini 3.5-flash-low",
+        "complexity": "low",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "gemini-3.5-flash-extra-low",
+        "label": "Gemini 3.5-flash-extra-low",
+        "complexity": "low",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "gemini-3.1-flash-lite",
+        "label": "Gemini 3.1-flash-lite",
+        "complexity": "low",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
+      },
+      {
+        "modelId": "gemini-3.1-flash-image",
+        "label": "Gemini 3.1-flash-image",
+        "complexity": "low",
+        "supportsBatch": false,
+        "capabilities": ["chat", "structured", "reasoning"]
       },
       {
         "modelId": "text-embedding-004",
@@ -88,7 +247,16 @@
   "ollama": {
     "name": "Ollama",
     "envKey": "OLLAMA_URL",
-    "models": []
+    "models": [
+      {
+        "modelId": "bge-m3",
+        "label": "BGE-M3",
+        "complexity": "low",
+        "supportsBatch": false,
+        "capabilities": ["embedding"],
+        "dimensions": 1024
+      }
+    ]
   },
   "azure": {
     "name": "Azure OpenAI",
