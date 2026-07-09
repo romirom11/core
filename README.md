@@ -144,7 +144,8 @@ server CORE connects *to*. Only the second is what an agent can use.
 agent concluded the tool did not exist. Claude did this reliably; GPT and Gemini
 happened to delegate first. The tool now returns a `scope` field explaining what it
 covers, and the prompt says an empty catalog answers "can they connect this?", never
-"do they have it?". Not yet confirmed against a running instance.
+"do they have it?". Confirmed against a running instance: Claude now delegates
+instead of reporting the server missing.
 
 **A large MCP server may blow the action-selection prompt.** Before handing actions
 to the agent, `getIntegrationActions` asks a separate `low`-tier model to pick the
