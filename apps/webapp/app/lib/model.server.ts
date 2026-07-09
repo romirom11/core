@@ -17,6 +17,8 @@ import {
 
 import { createOllama } from "ollama-ai-provider-v2";
 import { createAzure } from "@ai-sdk/azure";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   getDefaultChatProviderType,
   getDefaultChatModelId,
@@ -163,6 +165,38 @@ export const getModel = (takeModel?: string) => {
     }
     const azureClient = createAzure({ baseURL, apiKey });
     return azureClient(modelId);
+  }
+
+  // Anthropic proxy: native /v1/messages against a custom base URL.
+  const anthropicConfig = getProviderConfig("anthropic");
+  if (provider === "anthropic" && anthropicConfig.baseUrl) {
+    const apiKey = resolveApiKey("anthropic");
+    if (!apiKey) {
+      throw new Error(
+        "Anthropic proxy configured but ANTHROPIC_API_KEY is missing.",
+      );
+    }
+    const anthropicClient = createAnthropic({
+      baseURL: anthropicConfig.baseUrl,
+      apiKey,
+    });
+    return anthropicClient(modelId);
+  }
+
+  // Gemini proxy: native generateContent against a custom base URL.
+  const googleConfig = getProviderConfig("google");
+  if (provider === "google" && googleConfig.baseUrl) {
+    const apiKey = resolveApiKey("google");
+    if (!apiKey) {
+      throw new Error(
+        "Gemini proxy configured but GOOGLE_GENERATIVE_AI_API_KEY is missing.",
+      );
+    }
+    const googleClient = createGoogleGenerativeAI({
+      baseURL: googleConfig.baseUrl,
+      apiKey,
+    });
+    return googleClient(modelId);
   }
 
   // OpenAI proxy: use direct AI SDK provider (needs custom base URL)

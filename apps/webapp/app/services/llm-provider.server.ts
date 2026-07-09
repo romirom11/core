@@ -55,6 +55,14 @@ function buildProviderConfig(providerType: string): Record<string, unknown> {
               : env.OPENAI_API_MODE,
         }),
       };
+    case "anthropic":
+      return {
+        ...(env.ANTHROPIC_BASE_URL && { baseUrl: env.ANTHROPIC_BASE_URL }),
+      };
+    case "google":
+      return {
+        ...(env.GEMINI_BASE_URL && { baseUrl: env.GEMINI_BASE_URL }),
+      };
     case "ollama":
       return {
         ...(env.OLLAMA_URL && { baseUrl: env.OLLAMA_URL }),
@@ -225,6 +233,12 @@ export function getProviderConfig(providerType: string): ProviderConfig {
           ? "chat_completions"
           : env.OPENAI_API_MODE,
     };
+  }
+  if (providerType === "anthropic") {
+    return { baseUrl: env.ANTHROPIC_BASE_URL };
+  }
+  if (providerType === "google") {
+    return { baseUrl: env.GEMINI_BASE_URL };
   }
   if (providerType === "ollama") {
     return { baseUrl: env.OLLAMA_URL };
@@ -711,10 +725,11 @@ export async function resolveModelConfig(
     providerType,
   );
 
-  // Mastra's router has no local-Ollama provider (only ollama-cloud), so a local
-  // Ollama needs a concrete AI SDK model instance built with its base URL — the
-  // same path createAgent/getModel uses — instead of a router string that fails.
-  if (providerType === "ollama") {
+  // Mastra's router string form carries no base URL, so any provider pointed at a
+  // custom endpoint — a local Ollama, or an OpenAI/Anthropic/Gemini proxy — needs a
+  // concrete AI SDK model instance instead. getModel builds one per provider, each
+  // speaking that provider's native protocol against the configured base URL.
+  if (providerType === "ollama" || getProviderConfig(providerType).baseUrl) {
     return {
       modelConfig: getModel(modelString) as unknown as ModelConfig,
       isBYOK,

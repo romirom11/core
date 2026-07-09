@@ -70,6 +70,12 @@ export const PROVIDER_SPECS: Record<string, ProviderSpec> = {
     byokSupported: true,
     apiKeyVar: "ANTHROPIC_API_KEY",
     apiKeyPlaceholder: "sk-ant-...",
+    baseUrl: {
+      var: "ANTHROPIC_BASE_URL",
+      required: false,
+      placeholder: "https://api.anthropic.com/v1",
+      hint: "Leave blank for Anthropic direct, or paste a proxy URL (include the /v1 suffix) speaking the native Anthropic API",
+    },
     defaultChatModel: "claude-opus-4-7",
   },
   google: {
@@ -79,6 +85,12 @@ export const PROVIDER_SPECS: Record<string, ProviderSpec> = {
     byokSupported: true,
     apiKeyVar: "GOOGLE_GENERATIVE_AI_API_KEY",
     apiKeyPlaceholder: "AIza...",
+    baseUrl: {
+      var: "GEMINI_BASE_URL",
+      required: false,
+      placeholder: "https://generativelanguage.googleapis.com/v1beta",
+      hint: "Leave blank for Google direct, or paste a proxy URL (include the /v1beta suffix) speaking the native Gemini API",
+    },
     defaultChatModel: "gemini-2.5-pro",
   },
   ollama: {

@@ -99,7 +99,9 @@ const EnvironmentSchema = z
       .enum(["responses", "chat_completions", "chat"])
       .default("responses"),
     ANTHROPIC_API_KEY: z.string().optional(),
+    ANTHROPIC_BASE_URL: z.string().optional(),
     GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
+    GEMINI_BASE_URL: z.string().optional(),
     OPENROUTER_API_KEY: z.string().optional(),
     DEEPSEEK_API_KEY: z.string().optional(),
     AI_GATEWAY_API_KEY: z.string().optional(),
