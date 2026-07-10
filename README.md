@@ -107,6 +107,33 @@ if that matters.
 
 Regenerate the list against your own gateway with `GET /v1/models`.
 
+### Voice
+
+The desktop hotkey (Ctrl+Option) and the in-app dictation run on Apple's
+recognizer, which upstream pinned to `en-US` — every language but English came
+out garbled regardless of settings. The recognizer now follows the STT language
+picked under **Settings → Workspace → Agent → Voice**, resolved against what
+`SFSpeechRecognizer` supports on the machine (`uk` → `uk-UA`; "auto" → system
+locale). This lives in the bundled Swift helper, so it needs the app rebuilt
+(`pnpm tauri build`) — the shell is compiled, only the panel UI streams from
+the server.
+
+The STT provider picker now genuinely covers the hotkey, as its own label
+always claimed. With ElevenLabs selected the panel records in its webview and
+uploads each turn to `/api/v1/voice/stt` — pure web code, no rebuild needed.
+Two limits on that path: no live partial text (uploads are per-turn), and no
+voice barge-in while the butler speaks — tap Ctrl to interrupt.
+
+TTS falls back to the local Apple voice whenever the cloud synth fails, by
+design — but upstream swallowed the reason, so a wrong-sounding voice was
+undiagnosable without server logs. A failing synthesis now returns the
+ElevenLabs error body on the 502 and the widget logs it to its console.
+Typical causes: an API key scoped without Text-to-Speech, quota, or a picked
+voice that is not in the account (this last one is how it was found).
+
+STT runs on `scribe_v2`; upstream's `scribe_v1` is deprecated with removal
+scheduled for July 2026.
+
 ### Known gaps
 
 **A model named only through `MODEL` survives one restart.** The seeder deprecates
