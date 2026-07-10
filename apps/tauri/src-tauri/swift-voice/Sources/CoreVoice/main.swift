@@ -71,6 +71,12 @@ final class VoiceController: NSObject, AVSpeechSynthesizerDelegate {
     /// code, then the system locale (resolved the same way), then en-US.
     private static func resolveLocale(_ requested: String?) -> Locale {
         let supported = SFSpeechRecognizer.supportedLocales()
+        // Region of the system locale ("en_UA" → "UA"), used to pick among a
+        // language's regional variants.
+        let sysId = Locale.current.identifier.replacingOccurrences(of: "_", with: "-")
+        let sysRegion = sysId.split(separator: "-").dropFirst().first
+            .map { String($0).uppercased() }
+
         func match(_ id: String) -> Locale? {
             let norm = id.replacingOccurrences(of: "_", with: "-")
             if let exact = supported.first(where: {
@@ -79,8 +85,29 @@ final class VoiceController: NSObject, AVSpeechSynthesizerDelegate {
             }) {
                 return exact
             }
+            // supportedLocales() is an unordered Set; sort before picking or
+            // the fallback flips between en-US / en-SG / en-AU per process.
             let lang = norm.prefix(2).lowercased()
-            return supported.first { $0.identifier.lowercased().hasPrefix(lang) }
+            let candidates = supported
+                .filter { $0.identifier.lowercased().hasPrefix(lang) }
+                .sorted { $0.identifier < $1.identifier }
+            let dashed = { (l: Locale) in
+                l.identifier.replacingOccurrences(of: "_", with: "-").uppercased()
+            }
+            if let region = sysRegion,
+               let hit = candidates.first(where: { dashed($0).hasSuffix("-" + region) }) {
+                return hit
+            }
+            // "uk-UA", "de-DE", "fr-FR" — the language's home region.
+            if let home = candidates.first(where: {
+                dashed($0).hasSuffix("-" + lang.uppercased())
+            }) {
+                return home
+            }
+            if let us = candidates.first(where: { $0.identifier == "en-US" }) {
+                return us
+            }
+            return candidates.first
         }
         if let req = requested, !req.isEmpty, req.lowercased() != "auto",
            let m = match(req) {
