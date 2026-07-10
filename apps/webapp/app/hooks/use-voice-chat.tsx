@@ -49,6 +49,10 @@ export interface VoiceChatError {
 export interface UseVoiceChatOptions {
   /** Override the runtime default. */
   provider?: STTProviderId;
+  /** STT language hint (ISO 639-1, "" / "auto" = auto-detect). Cloud
+   *  providers resolve this server-side from user metadata; the Apple
+   *  path needs it here because the Swift recognizer runs locally. */
+  language?: string;
   /** Called with the final transcript when recording stops. */
   onResult?: (text: string) => void;
   /** Called on any failure path. */
@@ -180,7 +184,10 @@ export function useVoiceChat(
       );
       appleUnsubsRef.current = [partialUnsub, finalUnsub, errorUnsub];
 
-      await tauriInvoke("voice_start_dictation");
+      await tauriInvoke("voice_start_dictation", {
+        locale:
+          opts.language && opts.language !== "auto" ? opts.language : null,
+      });
       setStatus("recording");
     } catch (err) {
       teardownApple();

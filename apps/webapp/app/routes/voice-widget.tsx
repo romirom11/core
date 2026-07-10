@@ -40,7 +40,7 @@ import { FlickeringGrid } from "~/components/ui/flickering-grid";
 import { Button, Input } from "~/components/ui";
 import { cn } from "~/lib/utils";
 import { ArrowRight, X } from "lucide-react";
-import { requireWorkpace } from "~/services/session.server";
+import { requireWorkpace, requireUser } from "~/services/session.server";
 
 export const meta: MetaFunction = () => [{ title: "Butler" }];
 
@@ -48,11 +48,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // The pill's idle label shows the workspace name as a quick "this is
   // your butler" identifier. Falls back to "Butler" if no workspace
   // (shouldn't happen in practice for an authed widget mount).
+  // sttLanguage rides along so the Swift recognizer hears the same
+  // language the user picked for STT in Voice settings ("" = auto).
   try {
-    const workspace = await requireWorkpace(request);
-    return json({ workspaceName: workspace?.name ?? "Butler" });
+    const [workspace, user] = await Promise.all([
+      requireWorkpace(request),
+      requireUser(request),
+    ]);
+    const userMetadata = user?.metadata as Record<string, unknown> | null;
+    const sttLanguage =
+      (userMetadata?.sttLanguage as string | undefined) ?? "";
+    return json({ workspaceName: workspace?.name ?? "Butler", sttLanguage });
   } catch {
-    return json({ workspaceName: "Butler" });
+    return json({ workspaceName: "Butler", sttLanguage: "" });
   }
 };
 
@@ -96,7 +104,9 @@ export default function VoiceWidget() {
   const [partialText, setPartialText] = useState("");
   const [theme] = useTheme();
   const isDark = theme === Theme.DARK;
-  const { workspaceName } = useLoaderData<typeof loader>();
+  const { workspaceName, sttLanguage } = useLoaderData<typeof loader>();
+  // "" / "auto" → Swift falls back to the system locale.
+  const sttLocale = sttLanguage && sttLanguage !== "auto" ? sttLanguage : null;
 
   const conversationIdRef = useRef<string | null>(null);
   const screenContextRef = useRef<ScreenContext | null>(null);
@@ -346,7 +356,7 @@ export default function VoiceWidget() {
     inFlightRef.current?.abort();
     inFlightRef.current = null;
     setStatus("armed");
-    void tauriInvoke("voice_start_listening");
+    void tauriInvoke("voice_start_listening", { locale: sttLocale });
     armIdleTimer();
   }
 
@@ -381,7 +391,7 @@ export default function VoiceWidget() {
     heardSpeechRef.current = false;
     setPartialText("");
     setStatus("armed");
-    void tauriInvoke("voice_start_listening");
+    void tauriInvoke("voice_start_listening", { locale: sttLocale });
     armIdleTimer();
   }
 
@@ -392,7 +402,7 @@ export default function VoiceWidget() {
     setPartialText("");
     setError(null);
     setStatus("armed");
-    void tauriInvoke("voice_start_listening");
+    void tauriInvoke("voice_start_listening", { locale: sttLocale });
     armIdleTimer();
   }
 

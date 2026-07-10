@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { Theme, useTheme } from "remix-themes";
 
 import { FlickeringGrid } from "~/components/ui/flickering-grid";
+import { useOptionalUser } from "~/hooks/useUser";
 import { isTauri, tauriInvoke, tauriListen } from "~/lib/tauri.client";
 
 // How long Ctrl+Shift must be held alone before we start dictation.
@@ -99,6 +100,17 @@ export function DictationOverlay() {
   const armRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unsubsRef = useRef<Array<() => void>>([]);
 
+  // The user's saved STT language, mirrored into a ref so the key-chord
+  // effect (mounted once) never closes over a stale value.
+  const user = useOptionalUser();
+  const sttLanguage =
+    ((user?.metadata as Record<string, unknown> | null)?.sttLanguage as
+      | string
+      | undefined) ?? "";
+  const sttLocaleRef = useRef<string | null>(null);
+  sttLocaleRef.current =
+    sttLanguage && sttLanguage !== "auto" ? sttLanguage : null;
+
   useEffect(() => {
     if (!isTauri() || typeof window === "undefined") return;
 
@@ -161,7 +173,9 @@ export function DictationOverlay() {
         );
         unsubsRef.current = [partialUnsub, finalUnsub, errorUnsub];
 
-        await tauriInvoke("voice_start_dictation");
+        await tauriInvoke("voice_start_dictation", {
+          locale: sttLocaleRef.current,
+        });
       } catch (err) {
         console.warn("[dictation] start failed", err);
         activeRef.current = false;

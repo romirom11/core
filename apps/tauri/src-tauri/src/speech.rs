@@ -293,9 +293,14 @@ pub fn voice_request_permissions<R: Runtime>(
 pub fn voice_start_listening<R: Runtime>(
     app: AppHandle<R>,
     state: State<SharedSpeech>,
+    locale: Option<String>,
 ) -> Result<(), String> {
     let mut proc = state.lock().unwrap();
-    send_command(&app, &mut proc, json!({"cmd": "start_listening"}))
+    send_command(
+        &app,
+        &mut proc,
+        json!({"cmd": "start_listening", "locale": locale}),
+    )
 }
 
 #[tauri::command]
@@ -327,10 +332,15 @@ pub fn voice_cancel_listening<R: Runtime>(
 pub fn voice_start_dictation<R: Runtime>(
     app: AppHandle<R>,
     state: State<SharedSpeech>,
+    locale: Option<String>,
 ) -> Result<(), String> {
     let mut proc = state.lock().unwrap();
     proc.dictation_mode.store(true, Ordering::SeqCst);
-    send_command(&app, &mut proc, json!({"cmd": "start_listening"}))
+    send_command(
+        &app,
+        &mut proc,
+        json!({"cmd": "start_listening", "locale": locale}),
+    )
 }
 
 #[tauri::command]

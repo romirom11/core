@@ -7,7 +7,8 @@ import Speech
 //
 // Commands (stdin):
 //   {"cmd": "request_permissions"}
-//   {"cmd": "start_listening"}
+//   {"cmd": "start_listening", "locale": "uk"}   // locale optional: ISO 639-1 or
+//                                                // BCP-47; "auto"/absent = system
 //   {"cmd": "stop_listening"}
 //   {"cmd": "speak", "text": "..."}
 //   {"cmd": "cancel_speech"}
@@ -61,7 +62,46 @@ func stderrLog(_ msg: String) {
 // ------------------------------------------------------------------
 
 final class VoiceController: NSObject, AVSpeechSynthesizerDelegate {
-    private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var recognizer = SFSpeechRecognizer(locale: VoiceController.resolveLocale(nil))
+    private var recognizerLocale: Locale = VoiceController.resolveLocale(nil)
+
+    /// Map a requested language ("uk", "uk-UA", "auto", nil) onto a locale
+    /// SFSpeechRecognizer actually supports on this machine. Exact identifier
+    /// match wins, then any supported locale sharing the two-letter language
+    /// code, then the system locale (resolved the same way), then en-US.
+    private static func resolveLocale(_ requested: String?) -> Locale {
+        let supported = SFSpeechRecognizer.supportedLocales()
+        func match(_ id: String) -> Locale? {
+            let norm = id.replacingOccurrences(of: "_", with: "-")
+            if let exact = supported.first(where: {
+                $0.identifier.replacingOccurrences(of: "_", with: "-")
+                    .caseInsensitiveCompare(norm) == .orderedSame
+            }) {
+                return exact
+            }
+            let lang = norm.prefix(2).lowercased()
+            return supported.first { $0.identifier.lowercased().hasPrefix(lang) }
+        }
+        if let req = requested, !req.isEmpty, req.lowercased() != "auto",
+           let m = match(req) {
+            return m
+        }
+        if let sys = match(Locale.current.identifier) {
+            return sys
+        }
+        return Locale(identifier: "en-US")
+    }
+
+    /// Recreate the recognizer when the effective locale changes. Called from
+    /// the start_listening handler before a turn starts, so a stale locale
+    /// never carries over.
+    func applyLocale(_ requested: String?) {
+        let target = Self.resolveLocale(requested)
+        guard target.identifier != recognizerLocale.identifier else { return }
+        stderrLog("recognizer locale \(recognizerLocale.identifier) -> \(target.identifier)")
+        recognizer = SFSpeechRecognizer(locale: target)
+        recognizerLocale = target
+    }
     /// `var` rather than `let` because if a pinned device can't actually
     /// be driven by AVAudioEngine (some Bluetooth headsets fail to start
     /// with `kAudioUnitErr_FormatNotSupported` / -10868) the cleanest way
@@ -1106,6 +1146,7 @@ func handleLine(_ data: Data) {
     case "request_permissions":
         controller.requestPermissions()
     case "start_listening":
+        controller.applyLocale(obj["locale"] as? String)
         controller.startListening()
     case "stop_listening":
         controller.stopListening()

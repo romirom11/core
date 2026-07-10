@@ -21,6 +21,7 @@ import { FlickeringGrid } from "~/components/ui/flickering-grid";
 import { cn } from "~/lib/utils";
 import { ToastAction } from "~/components/ui/toast";
 import { useToast } from "~/hooks/use-toast";
+import { useOptionalUser } from "~/hooks/useUser";
 import {
   useVoiceChat,
   type UseVoiceChatOptions,
@@ -52,9 +53,17 @@ export function VoiceMicButton({
   const { toast } = useToast();
   const [theme] = useTheme();
   const isDark = theme === Theme.DARK;
+  // The user's saved STT language. Cloud providers re-resolve it
+  // server-side; the Apple/Tauri path can only get it from here.
+  const user = useOptionalUser();
+  const sttLanguage =
+    ((user?.metadata as Record<string, unknown> | null)?.sttLanguage as
+      | string
+      | undefined) ?? "";
 
   const voiceOpts: UseVoiceChatOptions = {
     provider,
+    language: sttLanguage,
     onResult: (text) => {
       if (text) onTranscript(text);
     },
