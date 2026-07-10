@@ -145,7 +145,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       if (err.code === "invalid-input") {
         return new Response(err.message, { status: 400 });
       }
-      return new Response(null, { status: 502 });
+      // Carry the upstream reason to the caller. Tauri clients still treat
+      // any non-200 as "fall back to the local synth", but now a devtools
+      // fetch (or the widget's console) can show WHY the cloud voice failed
+      // — key scope, unknown voice, quota — without shell access to the
+      // server logs. ElevenLabs error bodies contain no secrets.
+      return new Response(
+        JSON.stringify({
+          error: "upstream",
+          provider: providerId,
+          message: err.message,
+          detail: err.detail ?? null,
+        }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
     logger.error("[voice-tts] unexpected synthesis failure", {
       err: String(err),

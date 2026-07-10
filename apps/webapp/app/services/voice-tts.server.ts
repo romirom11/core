@@ -159,6 +159,11 @@ export class TTSError extends Error {
   constructor(
     public code: "needs-config" | "upstream" | "invalid-input",
     message: string,
+    /** Truncated upstream response body — the actual reason (bad key scope,
+     *  unknown voice, quota). Carried so the route can surface a failing
+     *  cloud synth to the client instead of a bare 502 that is only
+     *  diagnosable with shell access to the server. */
+    public detail?: string,
   ) {
     super(message);
     this.name = "TTSError";
@@ -255,7 +260,11 @@ const elevenLabsProvider: TTSProvider = {
         status: upstream.status,
         body: body.slice(0, 500),
       });
-      throw new TTSError("upstream", `ElevenLabs ${upstream.status}`);
+      throw new TTSError(
+        "upstream",
+        `ElevenLabs ${upstream.status}`,
+        body.slice(0, 300),
+      );
     }
 
     return { body: upstream.body, contentType: "audio/mpeg" };

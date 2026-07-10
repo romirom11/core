@@ -750,6 +750,16 @@ export default function VoiceWidget() {
       });
 
       if (res.status === 204 || !res.ok) {
+        if (!res.ok && res.status !== 204) {
+          // The route now carries the upstream reason (key scope, unknown
+          // voice, quota) — surface it so a silent Apple fallback is
+          // explainable from the widget console alone.
+          const reason = await res.text().catch(() => "");
+          console.warn(
+            `[voice-widget] cloud TTS ${res.status} → local fallback`,
+            reason.slice(0, 300),
+          );
+        }
         void tauriInvoke("voice_log_tts_backend", {
           backend: "apple-swift",
           chars: text.length,

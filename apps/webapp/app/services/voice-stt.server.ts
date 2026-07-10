@@ -72,7 +72,9 @@ export interface STTProvider {
   }): Promise<STTResult>;
 }
 
-const ELEVENLABS_STT_MODEL = "scribe_v1";
+// scribe_v1 is deprecated with removal scheduled for July 2026 (ElevenLabs
+// models doc); scribe_v2 is the documented replacement.
+const ELEVENLABS_STT_MODEL = "scribe_v2";
 
 const elevenLabsProvider: STTProvider = {
   id: "elevenlabs",
