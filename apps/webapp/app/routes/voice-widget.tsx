@@ -36,6 +36,8 @@ import { useLoaderData } from "@remix-run/react";
 import { Theme, useTheme } from "remix-themes";
 
 import { isTauri, tauriInvoke, tauriListen } from "~/lib/tauri.client";
+import { useVoiceVad } from "~/hooks/use-voice-vad";
+import type { STTProviderId } from "~/components/voice/stt-providers";
 import { FlickeringGrid } from "~/components/ui/flickering-grid";
 import { Button, Input } from "~/components/ui";
 import { cn } from "~/lib/utils";
@@ -58,9 +60,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const userMetadata = user?.metadata as Record<string, unknown> | null;
     const sttLanguage =
       (userMetadata?.sttLanguage as string | undefined) ?? "";
-    return json({ workspaceName: workspace?.name ?? "Butler", sttLanguage });
+    // The same STT provider the chat mic honors. "apple" keeps the Swift
+    // recognizer; anything else records in the webview and uploads to
+    // /api/v1/voice/stt, exactly like the chat composer.
+    const sttProvider =
+      (userMetadata?.sttProvider as string | undefined) ?? "apple";
+    return json({
+      workspaceName: workspace?.name ?? "Butler",
+      sttLanguage,
+      sttProvider,
+    });
   } catch {
-    return json({ workspaceName: "Butler", sttLanguage: "" });
+    return json({
+      workspaceName: "Butler",
+      sttLanguage: "",
+      sttProvider: "apple",
+    });
   }
 };
 
@@ -104,9 +119,13 @@ export default function VoiceWidget() {
   const [partialText, setPartialText] = useState("");
   const [theme] = useTheme();
   const isDark = theme === Theme.DARK;
-  const { workspaceName, sttLanguage } = useLoaderData<typeof loader>();
+  const { workspaceName, sttLanguage, sttProvider } =
+    useLoaderData<typeof loader>();
   // "" / "auto" → Swift falls back to the system locale.
   const sttLocale = sttLanguage && sttLanguage !== "auto" ? sttLanguage : null;
+  // Non-Apple STT: capture in the webview and upload, instead of driving
+  // the Swift recognizer. Language is resolved server-side from metadata.
+  const webStt = sttProvider !== "apple";
 
   const conversationIdRef = useRef<string | null>(null);
   const screenContextRef = useRef<ScreenContext | null>(null);
@@ -141,6 +160,44 @@ export default function VoiceWidget() {
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
+
+  // ── Web STT path (provider !== "apple") ─────────────────────────────────
+  // The VAD pipeline mounts only while the widget is actually waiting on the
+  // user ("armed"/"listening"). That keeps the mic closed while the butler
+  // thinks or speaks — Swift TTS plays outside the page, so the browser's
+  // echoCancellation can't protect us from it.
+  //
+  // Each VAD callback mirrors a Swift event: onSpeechOnset ≙ the first
+  // voice:partial, onTranscript ≙ voice:final, and the VAD's own silence
+  // endpointing replaces voice:silence-timeout. Live partial text has no web
+  // equivalent (uploads are per-turn), so the pill shows only the level.
+  const vad = useVoiceVad({
+    enabled: webStt && (status === "armed" || status === "listening"),
+    provider: sttProvider as STTProviderId,
+    onSpeechOnset: () => {
+      if (!activeModeRef.current) return;
+      if (!heardSpeechRef.current) clearIdleTimer();
+      heardSpeechRef.current = true;
+      setStatus((s) => (s === "armed" ? "listening" : s));
+    },
+    onTranscript: (text) => {
+      if (!activeModeRef.current) return;
+      void sendTurn(text);
+    },
+    onTurnResult: ({ text }) => {
+      // Noise-only turn: the Swift path would simply never emit a final.
+      // Re-arm as if the user hadn't spoken yet.
+      if (!text && activeModeRef.current) {
+        heardSpeechRef.current = false;
+        setStatus((s) => (s === "listening" ? "armed" : s));
+        armIdleTimer();
+      }
+    },
+    onError: (err) => {
+      setError(err.message);
+      setStatus("error");
+    },
+  });
 
   // ── Make the host html/body transparent so the pill / rounded panel
   //    has no surrounding solid frame. Scoped to this route via cleanup.
@@ -356,7 +413,8 @@ export default function VoiceWidget() {
     inFlightRef.current?.abort();
     inFlightRef.current = null;
     setStatus("armed");
-    void tauriInvoke("voice_start_listening", { locale: sttLocale });
+    // Web STT needs no start call — the VAD mounts off the "armed" status.
+    if (!webStt) void tauriInvoke("voice_start_listening", { locale: sttLocale });
     armIdleTimer();
   }
 
@@ -367,7 +425,9 @@ export default function VoiceWidget() {
     inFlightRef.current?.abort();
     inFlightRef.current = null;
     cancelAllTTS();
-    void tauriInvoke("voice_cancel_listening");
+    // Web STT: dropping out of armed/listening unmounts the VAD, which
+    // discards any in-flight recording without uploading it.
+    if (!webStt) void tauriInvoke("voice_cancel_listening");
     heardSpeechRef.current = false;
     setStatus("idle");
     setPartialText("");
@@ -378,6 +438,13 @@ export default function VoiceWidget() {
    * one last `voice:final` → `sendTurn` → assistant reply. */
   function commitTurn() {
     clearIdleTimer();
+    if (webStt) {
+      // Force-end the current recording; the upload's transcript drives
+      // the next transition via sendTurn. Flipping to "thinking" here
+      // would unmount the VAD mid-upload and cancel it.
+      vad.commit();
+      return;
+    }
     setStatus("thinking");
     void tauriInvoke("voice_stop_listening");
   }
@@ -391,7 +458,8 @@ export default function VoiceWidget() {
     heardSpeechRef.current = false;
     setPartialText("");
     setStatus("armed");
-    void tauriInvoke("voice_start_listening", { locale: sttLocale });
+    // Web STT needs no start call — the VAD mounts off the "armed" status.
+    if (!webStt) void tauriInvoke("voice_start_listening", { locale: sttLocale });
     armIdleTimer();
   }
 
@@ -402,7 +470,8 @@ export default function VoiceWidget() {
     setPartialText("");
     setError(null);
     setStatus("armed");
-    void tauriInvoke("voice_start_listening", { locale: sttLocale });
+    // Web STT needs no start call — the VAD mounts off the "armed" status.
+    if (!webStt) void tauriInvoke("voice_start_listening", { locale: sttLocale });
     armIdleTimer();
   }
 

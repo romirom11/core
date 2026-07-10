@@ -84,6 +84,11 @@ export interface UseVoiceVadReturn {
   level: number;
   error: VoiceVadError | null;
   provider: STTProviderId;
+  /**
+   * Force-end the current turn right now instead of waiting for trailing
+   * silence — the "user tapped send" affordance. No-op unless recording.
+   */
+  commit: () => void;
 }
 
 const DEFAULTS = {
@@ -134,6 +139,11 @@ export function useVoiceVad({
     setStatus(s);
   }, []);
 
+  // Imperative "end the turn now". The real stop function lives inside the
+  // setup effect's closure; it parks itself here so `commit` stays stable.
+  const commitImplRef = useRef<() => void>(() => {});
+  const commit = useCallback(() => commitImplRef.current(), []);
+
   useEffect(() => {
     if (!enabled) {
       setStatusBoth("off");
@@ -180,6 +190,10 @@ export function useVoiceVad({
       } catch {
         // The "stop" handler still fires — let it finalize.
       }
+    };
+
+    commitImplRef.current = () => {
+      if (statusRef.current === "recording") stopRecorderAndUpload();
     };
 
     const setupRecorder = () => {
@@ -391,13 +405,14 @@ export function useVoiceVad({
       if (stream) {
         stream.getTracks().forEach((t) => t.stop());
       }
+      commitImplRef.current = () => {};
       setStatusBoth("off");
       setLevel(0);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, resolvedProvider, speechThreshold, silenceThreshold, silenceMs, minRecordingMs]);
 
-  return { status, level, error, provider: resolvedProvider };
+  return { status, level, error, provider: resolvedProvider, commit };
 }
 
 function pickSupportedMime(): string | null {
