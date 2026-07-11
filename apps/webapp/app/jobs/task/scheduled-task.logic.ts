@@ -303,7 +303,10 @@ async function runExecutionPipeline(
     returnDecrypted: true,
   });
 
-  const client = new CoreClient({ baseUrl: env.APP_ORIGIN, token: token! });
+  const client = new CoreClient({
+    baseUrl: env.INTERNAL_API_URL ?? env.APP_ORIGIN,
+    token: token!,
+  });
   const executorTools = new HttpOrchestratorTools(client);
 
   // runCASEPipeline runs its own pre-flight credit check and short-circuits

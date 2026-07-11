@@ -70,7 +70,10 @@ export async function processTask(payload: TaskPayload): Promise<TaskResult> {
       workspaceId,
       returnDecrypted: true,
     });
-    const client = new CoreClient({ baseUrl: env.APP_ORIGIN, token: token! });
+    const client = new CoreClient({
+      baseUrl: env.INTERNAL_API_URL ?? env.APP_ORIGIN,
+      token: token!,
+    });
     const executorTools = new HttpOrchestratorTools(client);
 
     const abortController = new AbortController();

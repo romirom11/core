@@ -149,7 +149,10 @@ async function runActivityCase(
       returnDecrypted: true,
     });
 
-    const client = new CoreClient({ baseUrl: env.APP_ORIGIN, token: token! });
+    const client = new CoreClient({
+      baseUrl: env.INTERNAL_API_URL ?? env.APP_ORIGIN,
+      token: token!,
+    });
     const executorTools = new HttpOrchestratorTools(client);
 
     const result: CASEPipelineResult = await runCASEPipeline({
@@ -255,7 +258,10 @@ async function runMemoryIngestCase(
       returnDecrypted: true,
     });
 
-    const client = new CoreClient({ baseUrl: env.APP_ORIGIN, token: token! });
+    const client = new CoreClient({
+      baseUrl: env.INTERNAL_API_URL ?? env.APP_ORIGIN,
+      token: token!,
+    });
     const executorTools = new HttpOrchestratorTools(client);
 
     const result: CASEPipelineResult = await runCASEPipeline({

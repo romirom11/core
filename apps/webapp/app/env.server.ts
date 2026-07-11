@@ -42,6 +42,11 @@ const EnvironmentSchema = z
     APP_ENV: z.string().default(process.env.NODE_ENV),
     LOGIN_ORIGIN: z.string().default("http://localhost:5173"),
     APP_ORIGIN: z.string().default("http://localhost:5173"),
+    // Where background jobs reach the app's own API. Defaults to APP_ORIGIN,
+    // but a self-hosted deployment whose public origin is unreachable from
+    // inside the container (tailnet HTTPS, firewalled loopback) points this
+    // at e.g. http://localhost:3000.
+    INTERNAL_API_URL: z.string().optional(),
 
     // Telemetry
     POSTHOG_PROJECT_KEY: z
